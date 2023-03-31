@@ -62,3 +62,10 @@ var Common = require('../core/Common');
     };
 
 })();
+
+console.log(Axes.fromVertices([{x: 3, y: 4}, {x: 4, y: 3}]));
+console.log(Axes.fromVertices([{x: 3, y: 4}, {x: 4, y: 30}]));
+console.log(Axes.fromVertices([{x: 4, y: 30}, {x: 3, y: 4}]));
+
+console.log(Axes.fromVertices([{x: 3, y: 4}, {x: 3, y: 3}]));
+console.log(Axes.fromVertices([{x: 3, y: 4}, {x: 4, y: 4}]));

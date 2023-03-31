@@ -738,17 +738,20 @@ var Axes = require('../geometry/Axes');
         deltaTime = (typeof deltaTime !== 'undefined' ? deltaTime : (1000 / 60)) * body.timeScale;
 
         var deltaTimeSquared = deltaTime * deltaTime,
-            correction = Body._timeCorrection ? deltaTime / (body.deltaTime || deltaTime) : 1;
+            correction = Body._timeCorrection ? deltaTime / (body.deltaTime || deltaTime) : 1; // 修正帧差
 
         // from the previous step
+        // 通过前后的位置变化，推出之前的速度
         var frictionAir = 1 - body.frictionAir * (deltaTime / Common._baseDelta),
             velocityPrevX = (body.position.x - body.positionPrev.x) * correction,
             velocityPrevY = (body.position.y - body.positionPrev.y) * correction;
 
         // update velocity with Verlet integration
+        // 推出当前速度
         body.velocity.x = (velocityPrevX * frictionAir) + (body.force.x / body.mass) * deltaTimeSquared;
         body.velocity.y = (velocityPrevY * frictionAir) + (body.force.y / body.mass) * deltaTimeSquared;
 
+        // 推出当前位置，缓存之前位置
         body.positionPrev.x = body.position.x;
         body.positionPrev.y = body.position.y;
         body.position.x += body.velocity.x;
@@ -756,11 +759,14 @@ var Axes = require('../geometry/Axes');
         body.deltaTime = deltaTime;
 
         // update angular velocity with Verlet integration
+        // 转矩与转动惯量: https://byjus.com/physics/relation-between-torque-and-moment-of-inertia/
+        // 相关：刚体setStatic时将inertia设置为无限大
         body.angularVelocity = ((body.angle - body.anglePrev) * frictionAir * correction) + (body.torque / body.inertia) * deltaTimeSquared;
         body.anglePrev = body.angle;
         body.angle += body.angularVelocity;
 
         // transform the body geometry
+        // 刚体的几何变换
         for (var i = 0; i < body.parts.length; i++) {
             var part = body.parts[i];
 

@@ -175,8 +175,8 @@ var Common = require('../core/Common');
         if (!pointAWorld || !pointBWorld)
             return;
 
-        var delta = Vector.sub(pointAWorld, pointBWorld),
-            currentLength = Vector.magnitude(delta);
+        var delta = Vector.sub(pointAWorld, pointBWorld), // {x: xa - xb, y: ya - yb}
+            currentLength = Vector.magnitude(delta); // 两点距离
 
         // prevent singularity
         if (currentLength < Constraint._minLength) {
@@ -184,20 +184,21 @@ var Common = require('../core/Common');
         }
 
         // solve distance constraint with Gauss-Siedel method
-        var difference = (currentLength - constraint.length) / currentLength,
-            isRigid = constraint.stiffness >= 1 || constraint.length === 0,
-            stiffness = isRigid ? constraint.stiffness * timeScale 
-                : constraint.stiffness * timeScale * timeScale,
-            damping = constraint.damping * timeScale,
-            force = Vector.mult(delta, difference * stiffness),
+        // 高斯－赛德尔迭代（Gauss–Seidel method）是数值线性代数中的一个迭代法，可用来求出线性方程组解的近似值。
+        var difference = (currentLength - constraint.length) / currentLength, // 与既定约束距离的差值
+            isRigid = constraint.stiffness >= 1 || constraint.length === 0, // 是否很刚
+            stiffness = isRigid ? constraint.stiffness * timeScale // 刚度
+                : constraint.stiffness * timeScale * timeScale, // 刚度和timeScale有什么关系？
+            damping = constraint.damping * timeScale, // 阻尼
+            force = Vector.mult(delta, difference * stiffness), // xy强制要移动距离 
             massTotal = (bodyA ? bodyA.inverseMass : 0) + (bodyB ? bodyB.inverseMass : 0),
             inertiaTotal = (bodyA ? bodyA.inverseInertia : 0) + (bodyB ? bodyB.inverseInertia : 0),
-            resistanceTotal = massTotal + inertiaTotal,
-            torque,
-            share,
-            normal,
-            normalVelocity,
-            relativeVelocity;
+            resistanceTotal = massTotal + inertiaTotal, // 阻力
+            torque, // 扭矩
+            share, // 质量占比
+            normal, //  {x: (xa - xb)/斜边长, y: (ya - yb)/斜边长}，用于阻尼
+            normalVelocity, // 用于阻尼
+            relativeVelocity;  // 用于阻尼
     
         if (damping > 0) {
             var zero = Vector.create();

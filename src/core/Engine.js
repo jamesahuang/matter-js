@@ -108,51 +108,63 @@ var Body = require('../body/Body');
             allConstraints = Composite.allConstraints(world);
 
         // if the world has changed
+        // 增删刚体或约束时，世界发生变化，清理缓存
         if (world.isModified) {
             // update the detector bodies
+            // 绑定碰撞探测器和所有刚体
             Detector.setBodies(detector, allBodies);
 
             // reset all composite modified flags
+            // world就是最顶层的一个composite, 这里会递归所有子级composite
             Composite.setModified(world, false, false, true);
         }
 
         // update sleeping if enabled
-        if (engine.enableSleeping)
+        // 动能低于阈值的刚体设置为休眠，提升检测效率
+        if (engine.enableSleeping) {
             Sleeping.update(allBodies, delta);
+        }
 
         // apply gravity to all bodies
+        // 因为重力是全局的，先处理重力，叠加到当前刚体受力
         Engine._bodiesApplyGravity(allBodies, engine.gravity);
 
         // update all body position and rotation by integration
         if (delta > 0) {
+            // 更新速度，位置，角度，包围盒
             Engine._bodiesUpdate(allBodies, delta);
         }
 
         // update all constraints (first pass)
+        // 根据约束条件的上一次计算的冲量(距离，刚度，阻尼)，更新刚体的位置和角度
         Constraint.preSolveAll(allBodies);
-        for (i = 0; i < engine.constraintIterations; i++) {
+        for (i = 0; i < engine.constraintIterations; i++) { // 迭代次数越多，求值越准确
             Constraint.solveAll(allConstraints, delta);
         }
         Constraint.postSolveAll(allBodies);
 
         // find all collisions
+        // 检测所有刚体的碰撞，利用缓存的上一帧的碰撞点pairs提升效率
         detector.pairs = engine.pairs;
         var collisions = Detector.collisions(detector);
 
         // update collision pairs
+        // 更新所有的碰撞点到pairs中
         Pairs.update(pairs, collisions, timestamp);
 
         // wake up bodies involved in collisions
+        // 根据碰撞信息，唤醒休眠的刚体
         if (engine.enableSleeping)
             Sleeping.afterCollisions(pairs.list);
 
         // trigger collision events
+        // 广播碰撞信息
         if (pairs.collisionStart.length > 0)
             Events.trigger(engine, 'collisionStart', { pairs: pairs.collisionStart });
 
         // iteratively resolve position between collisions
         var positionDamping = Common.clamp(20 / engine.positionIterations, 0, 1);
-        
+        // 更新发生碰撞的刚体的位置信息，刚体碰撞到的其他刚体总数越多阻力越大
         Resolver.preSolvePosition(pairs.list);
         for (i = 0; i < engine.positionIterations; i++) {
             Resolver.solvePosition(pairs.list, delta, positionDamping);
@@ -160,6 +172,7 @@ var Body = require('../body/Body');
         Resolver.postSolvePosition(allBodies);
 
         // update all constraints (second pass)
+        // 处理完碰撞后，根据约束再调整一遍刚体信息，计算下一次冲量
         Constraint.preSolveAll(allBodies);
         for (i = 0; i < engine.constraintIterations; i++) {
             Constraint.solveAll(allConstraints, delta);
@@ -167,6 +180,7 @@ var Body = require('../body/Body');
         Constraint.postSolveAll(allBodies);
 
         // iteratively resolve velocity between collisions
+        // 处理完碰撞后，计算刚体速度变化
         Resolver.preSolveVelocity(pairs.list);
         for (i = 0; i < engine.velocityIterations; i++) {
             Resolver.solveVelocity(pairs.list, delta);
@@ -270,6 +284,7 @@ var Body = require('../body/Body');
                 continue;
 
             // add the resultant force of gravity
+            // 重力对当前力的影响， F = m * a
             body.force.y += body.mass * gravity.y * gravityScale;
             body.force.x += body.mass * gravity.x * gravityScale;
         }

@@ -158,14 +158,27 @@ var Pair = require('./Pair');
         return collision;
     };
 
+    /* 
+    Separating Axis Theorem(SAT)算法
+    原理:两个凸多边形不相交,当且仅当必然存在一条直线,两个凸多边形在这条直线上的投影不相交.或者描述为:两个凸多边形相交,则在所有直线上的投影都是相交的. 对于凸多面体也是一样的,只是投影在面上.
+    SAT算法的一个缺点,就是只能适用于多边形/多面体,不能直接适用圆形/球形的物体.
+    SAT的求解其实并不复杂:对于两个多边形求相交,取其中一个多边形,遍历所有的边. 对于每条边, 顶点表示为a和b,向外的法线表示为n. 
+    然后判断另外一个多边形上的点是否都在这条边的外面,设点为 v,求(v-a)*n的值,根据值的符号,就可以判断出点在边的内侧或者外侧. 
+    如果存在某条边,使得另外一个多边形上所有点都在外侧,即认为两个多边形不相交.
+
+    分别遍历两个多边形,找到所有计算出的 (v-a)*n 值的最小值,还可以算出两个多边形相交的穿透深度.
+    对于多面体,原理是一样的,只是把边换成了面.
+    */
+
     /**
      * Find the overlap between two sets of vertices.
+     * 找到两组顶点之间的重叠。
      * @method _overlapAxes
      * @private
      * @param {object} result
      * @param {vertices} verticesA
      * @param {vertices} verticesB
-     * @param {axes} axes
+     * @param {axes} axes 顶点集A，每两点的法线集
      */
     Collision._overlapAxes = function(result, verticesA, verticesB, axes) {
         var verticesALength = verticesA.length,
@@ -406,3 +419,19 @@ var Pair = require('./Pair');
      */
 
 })();
+
+
+function test() {
+    var Bodies = require('../factory/Bodies');
+    var bodyA = Bodies.fromVertices(0, 0, [{x:0, y:0}, {x:3, y:0}, {x:0, y:4}]);
+    [2,3,4].forEach(x => {
+        var bodyB = Bodies.fromVertices(x, 0, [{x:0, y:0}, {x:3, y:0}, {x:0, y:4}]);
+        var _overlapAB = {
+            overlap: 0,
+            axis: null
+        };
+        Collision._overlapAxes(_overlapAB, bodyA.vertices, bodyB.vertices, bodyA.axes);
+        console.log(_overlapAB);
+    });
+}
+test();

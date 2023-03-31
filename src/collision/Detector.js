@@ -66,6 +66,7 @@ var Collision = require('./Collision');
             i,
             j;
 
+        // 按包围盒min x坐标排序
         bodies.sort(Detector._compareBoundsX);
 
         for (i = 0; i < bodiesLength; i++) {
@@ -94,19 +95,23 @@ var Collision = require('./Collision');
                     continue;
                 }
 
+                // 碰撞分组过滤
                 if (!canCollide(bodyA.collisionFilter, bodyB.collisionFilter)) {
                     continue;
                 }
 
                 var partsBLength = bodyB.parts.length;
 
+                // 上面找出可能碰撞的两个刚体，下面精确找出碰撞点
                 if (partsASingle && partsBLength === 1) {
+                    // 单体都是凸包，单体碰单体
                     var collision = collides(bodyA, bodyB, pairs);
 
                     if (collision) {
                         collisions.push(collision);
                     }
                 } else {
+                    // 至少一方是复合体，拆成多个单体，再单体碰单体
                     var partsAStart = partsALength > 1 ? 1 : 0,
                         partsBStart = partsBLength > 1 ? 1 : 0;
                     
